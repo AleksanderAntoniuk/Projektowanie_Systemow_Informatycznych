@@ -1,0 +1,9 @@
+// zad 1
+kostka <- function(n) {
+  sample(1:6, n, replace = TRUE)
+}
+
+// zad 2
+wektor <- function(n) {
+  1:n
+}
