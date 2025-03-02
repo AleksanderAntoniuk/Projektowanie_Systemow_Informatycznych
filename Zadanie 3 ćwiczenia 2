@@ -1,0 +1,63 @@
+# 1. Instalacja i ładowanie pakietów
+install.packages("tm")
+install.packages("wordcloud")
+install.packages("RColorBrewer")
+library(tm)
+library(wordcloud)
+library(RColorBrewer)
+
+# 2. Wczytanie danych
+text_2021 <- readLines("Biden_2021.txt", encoding = "UTF-8")
+text_2024 <- readLines("Biden_2024.txt", encoding = "UTF-8")
+
+# 3. Tworzenie i oczyszczanie korpusu
+corpus_2021 <- Corpus(VectorSource(text_2021))
+corpus_2024 <- Corpus(VectorSource(text_2024))
+
+clean_corpus <- function(corpus) {
+  corpus <- tm_map(corpus, content_transformer(tolower))
+  corpus <- tm_map(corpus, removePunctuation)
+  corpus <- tm_map(corpus, removeNumbers)
+  corpus <- tm_map(corpus, removeWords, stopwords("english"))
+  return(corpus)
+}
+
+corpus_2021 <- clean_corpus(corpus_2021)
+corpus_2024 <- clean_corpus(corpus_2024)
+
+# 4. Analiza częstości
+dtm_2021 <- DocumentTermMatrix(corpus_2021)
+dtm_2024 <- DocumentTermMatrix(corpus_2024)
+
+freq_2021 <- sort(colSums(as.matrix(dtm_2021)), decreasing=TRUE)
+freq_2024 <- sort(colSums(as.matrix(dtm_2024)), decreasing=TRUE)
+
+head(freq_2021, 10)
+head(freq_2024, 10)
+
+# 5. Wizualizacje
+
+# 5.1. Wykres słupkowy
+top_2021 <- head(freq_2021, 10)
+top_2024 <- head(freq_2024, 10)
+
+barplot(top_2021,
+        las = 2,
+        main = "Najczęstsze słowa - 2021")
+
+barplot(top_2024,
+        las = 2,
+        main = "Najczęstsze słowa - 2024")
+
+# 5.2. Chmury słów
+wordcloud(names(freq_2021),
+          freq_2021,
+          min.freq = 4,
+          colors = brewer.pal(8,"Dark2"),
+          random.order = FALSE)
+
+wordcloud(names(freq_2024),
+          freq_2024,
+          max.words = 40,
+          colors = brewer.pal(9,"Blues"),
+          random.order = FALSE)
