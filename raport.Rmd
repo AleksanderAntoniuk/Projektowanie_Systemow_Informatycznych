@@ -1,0 +1,117 @@
+---
+title: "Analiza przemówień Bidena"
+author: "Aleksander Antoniuk"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+# Wstęp
+
+W tym raporcie analizujemy przemówienia prezydenta Joe Bidena z lat 2021 i 2024.  
+Przeprowadzimy analizę częstości słów, wygenerujemy chmurę słów oraz porównamy wyniki.
+
+---
+
+## Setup – Ładowanie pakietów i ustawienia
+
+```{r setup, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+
+
+# Jeśli pakiety nie są zainstalowane, usuń komentarz poniższej linii i uruchom:
+# install.packages(c("tm", "wordcloud", "RColorBrewer", "ggplot2"))
+
+library(tm)
+library(wordcloud)
+library(RColorBrewer)
+library(ggplot2)
+
+# Funkcja do wczytania i wstępnego przetworzenia tekstu
+process_text <- function(file_path) {
+  text <- tolower(readLines(file_path, encoding = "UTF-8"))
+  text <- removePunctuation(text)
+  text <- removeNumbers(text)
+  # Usunięcie stop słów (domyślnie język angielski)
+  text <- removeWords(text, stopwords("en"))
+  # Tokenizacja (podział na słowa)
+  words <- unlist(strsplit(text, "\\s+"))
+  # Usunięcie pustych elementów
+  words <- words[words != ""]
+  return(words)
+}
+
+# Funkcja do obliczania częstości występowania słów
+word_frequency <- function(words) {
+  freq <- table(words)
+  freq_df <- data.frame(word = names(freq), freq = as.numeric(freq))
+  freq_df <- freq_df[order(-freq_df$freq), ]
+  return(freq_df)
+}
+
+# Funkcja do tworzenia chmury słów (zmieniono wywołanie tytułu)
+plot_wordcloud <- function(freq_df, plot_title, color_palette = "Dark2") {
+  wordcloud(words = freq_df$word, 
+            freq = freq_df$freq, 
+            min.freq = 16, 
+            colors = brewer.pal(8, color_palette))
+  title(main = plot_title)
+}
+
+# Ścieżka do pliku (upewnij się, że plik jest w katalogu roboczym)
+file_path <- "Biden_2021.txt"
+
+# 1. Wczytanie i przetworzenie tekstu
+words <- process_text(file_path)
+
+# 2. Obliczenie częstości występowania słów
+freq_df <- word_frequency(words)
+
+# 3. Tworzenie chmury słów
+plot_wordcloud(freq_df, "Chmura słów - Biden 2021", "Dark2")
+
+# 4. Wyświetlenie 10 najczęściej występujących słów
+head(freq_df, 10)
+
+# Definiujemy dodatkowe stop słowa do usunięcia
+custom_stopwords <- c("—", "–", "’s", "’re")
+
+# Usuwamy je z wektora words
+words <- words[!words %in% custom_stopwords]
+
+# Przeliczamy częstotliwość
+freq_df <- word_frequency(words)
+
+# Wyświetlamy chmurę słów i 10 najczęściej występujących słów po usunięciu dodatkowych stop words
+plot_wordcloud(freq_df, "Chmura słów - Biden 2021 (bez custom stopwords)", "Dark2")
+head(freq_df, 10)
+
+# Lista plików do wczytania
+file_paths <- c("Biden_2021.txt", "Biden_2024.txt")
+
+# Przetwarzanie każdego pliku osobno
+for (path in file_paths) {
+  words <- process_text(path)
+  freq_df <- word_frequency(words)
+  plot_wordcloud(freq_df, paste("Chmura słów -", path), "Dark2")
+  
+  cat("Najczęściej występujące słowa w pliku", path, ":\n")
+  print(head(freq_df, 10))
+  cat("\n")
+}
+
+# Usuwanie dodatkowych custom stop słów przy przetwarzaniu obu plików
+custom_stopwords <- c("—", "–", "’s", "’re")
+
+for (path in file_paths) {
+  words <- process_text(path)
+  
+  # Usuwamy custom stopwords
+  words <- words[!words %in% custom_stopwords]
+  
+  freq_df <- word_frequency(words)
+  plot_wordcloud(freq_df, paste("Chmura słów -", path, "(bez custom stopwords)"), "Dark2")
+  
+  cat("Najczęściej występujące słowa w pliku", path, ":\n")
+  print(head(freq_df, 10))
+  cat("\n")
+}
